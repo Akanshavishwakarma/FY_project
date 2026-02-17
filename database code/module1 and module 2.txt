@@ -31,3 +31,14 @@ SHOW COLUMNS FROM customers;
 SHOW COLUMNS FROM employees;
 SELECT * FROM customers;
 SELECT * FROM employees;
+
+
+ALTER TABLE employees DROP PRIMARY KEY;
+ALTER TABLE employees
+ADD PRIMARY KEY (emp_id);
+
+ALTER TABLE customers DROP PRIMARY KEY;
+ALTER TABLE customers
+ADD PRIMARY KEY (cust_id);
+
+
