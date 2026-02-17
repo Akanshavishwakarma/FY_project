@@ -39,7 +39,7 @@ app.post("/employees", (req, res) => {
         [name, empId, password],
         (err) => {
           if (err) return res.status(500).send("Database error");
-          res.send("Employee added");
+          res.send("Employee added 🎉!!!");
         }
       );
     }
@@ -80,7 +80,7 @@ app.post("/customers", (req, res) => {
         [name, custId, password],
         (err) => {
           if (err) return res.status(500).send("Database error");
-          res.send("Customer added");
+          res.send("Customer added 🎉!!!");
         }
       );
     }
@@ -108,7 +108,7 @@ app.delete("/employees/:empId", (req, res) => {
     [req.params.empId],
     (err) => {
       if (err) return res.status(500).send(err);
-      res.send("Employee deleted");
+      res.send("Employee deleted successfully 🎉!!!");
     }
   );
 });
@@ -153,7 +153,7 @@ app.delete("/customers/:custId", (req, res) => {
           // 3️⃣ Finally delete customer
           db.query("DELETE FROM customers WHERE cust_id=?", [custId], (err) => {
             if (err) return res.status(500).send("Database error");
-            res.send("Customer deleted and unassigned successfully");
+            res.send("Customer deleted and unassigned successfully 🎉!!!");
           });
         }
       );
@@ -186,6 +186,42 @@ app.post("/login", (req, res) => {
       return res.json({ role: "invalid" });
     }
   });
+});
+
+/* ===== VERIFY USER FOR FORGOT PASSWORD ===== */
+
+app.post("/verify-user", (req, res) => {
+  const { username, userid } = req.body;
+
+  db.query(
+    "SELECT * FROM employees WHERE emp_name=? AND emp_id=?",
+    [username, userid],
+    (err, result) => {
+      if (err) return res.status(500).json({ success: false });
+
+      if (result.length > 0) {
+        res.json({ success: true });
+      } else {
+        res.json({ success: false });
+      }
+    }
+  );
+});
+
+/* ===== CHANGE PASSWORD ===== */
+
+app.put("/change-password", (req, res) => {
+  const { empId, password } = req.body;
+
+  db.query(
+    "UPDATE employees SET password=? WHERE emp_id=?",
+    [password, empId],
+    (err) => {
+      if (err) return res.status(500).send("Database error");
+
+      res.send("Password updated");
+    }
+  );
 });
 
 /*==================NOT ASSIGN============*/
