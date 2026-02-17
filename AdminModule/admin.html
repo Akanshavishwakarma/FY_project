@@ -24,11 +24,19 @@
 
       <!-- CUSTOMER LIST -->
       <div
-        class="employee-section"
+        class="customer-section"
         id="customerListSection"
         style="display: none"
       >
-        <h3>Customer List</h3>
+        <h3 class="customer-header">Customer List</h3>
+        <div class="search-box">
+          <input
+            type="text"
+            id="customerSearch"
+            placeholder="Search customers..."
+            onkeyup="searchCustomer()"
+          />
+        </div>
         <table>
           <thead>
             <tr>
@@ -36,7 +44,6 @@
               <th>Sr No</th>
               <th>Customer Name</th>
               <th>Customer ID</th>
-              <th>Password</th>
             </tr>
           </thead>
           <tbody id="customerListBody"></tbody>
@@ -45,14 +52,23 @@
 
       <!-- EMPLOYEE LIST -->
       <section class="employee-section">
-        <h3>Employee List</h3>
+        <h3 class="employee-header">Employee List</h3>
+        <div class="search-box">
+          <input
+            type="text"
+            id="employeeSearch"
+            placeholder="Search employees..."
+            onkeyup="searchEmployee()"
+          />
+        </div>
+
         <table>
           <thead>
             <tr>
               <th></th>
               <th>Sr No</th>
               <th>Employee Name</th>
-              <th>Password</th>
+              <th>Employee ID</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -67,7 +83,11 @@
       <h3>Add Employee</h3>
       <input type="text" id="empName" placeholder="Employee Name" />
       <input type="text" id="empId" placeholder="Employee ID" />
-      <input type="password" id="empPassword" placeholder="Password" />
+      <div class="password-wrapper">
+        <input type="password" id="empPassword" placeholder="Password" />
+        <span class="eye" onclick="togglePassword('empPassword', this)">👁</span>
+      </div>
+
       <button onclick="addEmployee()">Done</button>
       <button class="cancel" onclick="closeModals()">Cancel</button>
     </div>
@@ -77,7 +97,13 @@
       <h3>Add Customer</h3>
       <input type="text" id="custName" placeholder="Customer Name" />
       <input type="text" id="custId" placeholder="Customer ID" />
-      <input type="password" id="custPassword" placeholder="Password" />
+      <div class="password-wrapper">
+        <input type="password" id="custPassword" placeholder="Password" />
+        <span class="eye" onclick="togglePassword('custPassword', this)"
+          >👁</span
+        >
+      </div>
+
       <button onclick="addCustomer()">Add Customer</button>
       <button class="cancel" onclick="closeModals()">Cancel</button>
     </div>
@@ -97,6 +123,12 @@
       <h3 id="deleteText"></h3>
       <button onclick="confirmDelete()">Confirm</button>
       <button class="cancel" onclick="closeModals()">Cancel</button>
+    </div>
+
+    <!-- MESSAGE POPUP -->
+    <div class="modal" id="messageModal">
+      <h3 id="messageText"></h3>
+      <button onclick="closeModals()">OK</button>
     </div>
 
     <!--javascript -->
@@ -124,6 +156,12 @@
         document
           .querySelectorAll(".modal input")
           .forEach((i) => (i.value = ""));
+      }
+
+      function showMessage(message) {
+        blurOn();
+        document.getElementById("messageText").innerText = message;
+        document.getElementById("messageModal").classList.add("show");
       }
 
       /* ================= OPEN MODALS ================= */
@@ -161,7 +199,7 @@
     ${e.emp_name}
     <div class="assigned-customers">${e.assigned_customers || ""}</div>
   </td>
- <td>${e.password}</td>
+  <td>${e.emp_id}</td>
   <td class="${e.assigned_customers ? "assigned" : "not"}">
     ${e.assigned_customers ? "Assigned" : "Not Assigned"}
   </td>
@@ -184,7 +222,6 @@
   <td>${i + 1}</td>
   <td>${c.cust_name}</td>
   <td>${c.cust_id}</td>
-<td>${c.password}</td>
 </tr>`;
             });
           });
@@ -193,7 +230,7 @@
       /* ================= ADD EMPLOYEE ================= */
       function addEmployee() {
         if (!empName.value || !empId.value || !empPassword.value) {
-          alert("Fill all fields");
+          showMessage("Fill all fields");
           return;
         }
 
@@ -208,16 +245,16 @@
         })
           .then((res) => res.text())
           .then((msg) => {
-            alert(msg);
             closeModals();
-            loadCustomers();
+            showMessage(msg);
+            loadEmployees();
           });
       }
 
       /* ================= ADD CUSTOMER ================= */
       function addCustomer() {
         if (!custName.value || !custId.value || !custPassword.value) {
-          alert("Fill all fields");
+          showMessage("Fill all fields");
           return;
         }
 
@@ -232,8 +269,8 @@
         })
           .then((res) => res.text())
           .then((msg) => {
-            alert(msg);
             closeModals();
+            showMessage(msg);
             loadCustomers();
           });
       }
@@ -290,22 +327,17 @@
       }
 
       /*==========Not assign=============*/
-
       function notAssignCustomer() {
         if (!currentEmpId) return;
 
-        if (!confirm("Remove all assigned customers from this employee?"))
-          return;
+        closeModals();
+        blurOn();
 
-        fetch(API + "/unassign/" + currentEmpId, {
-          method: "PUT",
-        })
-          .then((res) => res.text())
-          .then((msg) => {
-            alert(msg);
-            closeModals();
-            loadEmployees();
-          });
+        document.getElementById("deleteText").innerText =
+          "Remove all assigned customers from this employee?";
+
+        deleteType = "unassign"; // simple type
+        deleteModal.classList.add("show");
       }
 
       /* ================= CUSTOMER LIST TOGGLE ================= */
@@ -324,16 +356,62 @@
       }
 
       function confirmDelete() {
+        if (deleteType === "unassign") {
+          fetch(API + "/unassign/" + currentEmpId, {
+            method: "PUT",
+          })
+            .then((res) => res.text())
+            .then((msg) => {
+              closeModals();
+              showMessage(msg);
+              loadEmployees();
+            });
+
+          return; // important
+        }
+
+        // 👇 Ye purana wala same rahega
         fetch(`${API}/${deleteType}s/${deleteId}`, {
           method: "DELETE",
         })
           .then((res) => res.text())
           .then((msg) => {
-            alert(msg);
             closeModals();
+            showMessage(msg);
             loadEmployees();
             loadCustomers();
           });
+      }
+
+      /* ================= SEARCH ================= */
+      function searchEmployee() {
+        const val = employeeSearch.value.toLowerCase();
+        document.querySelectorAll("#employeeList tr").forEach((r) => {
+          r.style.display = r.innerText.toLowerCase().includes(val)
+            ? ""
+            : "none";
+        });
+      }
+
+      function searchCustomer() {
+        const val = customerSearch.value.toLowerCase();
+        document.querySelectorAll("#customerListBody tr").forEach((r) => {
+          r.style.display = r.innerText.toLowerCase().includes(val)
+            ? ""
+            : "none";
+        });
+      }
+
+      function togglePassword(id, element) {
+        const input = document.getElementById(id);
+
+        if (input.type === "password") {
+          input.type = "text";
+          element.innerHTML = "🙈";
+        } else {
+          input.type = "password";
+          element.innerHTML = "👁";
+        }
       }
     </script>
   </body>
